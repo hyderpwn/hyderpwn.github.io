@@ -943,7 +943,10 @@ const PROFILE = {
     { type: "Open source", title: "My GitHub", text: "Tools, proof-of-concept code and notes from my research.", stack: ["GitHub"], code: "https://github.com/hyderpwn", demo: "" }
   ],
   /* Add posts like: { date: "2026-10-01", title: "...", summary: "...", tags: ["Web"], minutes: 8, url: "https://..." } */
-  posts: [],
+  posts: [
+    { date: "2026-09-17", title: "From a Payment Receipt Upload to Full Server Compromise: An Arbitrary File Upload Case Study", summary: "How a public “upload your receipt” feature became remote code execution and full server takeover — and the controls that would have stopped it.", tags: ["Web", "File Upload", "RCE"], minutes: 7, url: "https://medium.com/@shyderali74/from-a-payment-receipt-upload-to-full-server-compromise-an-arbitrary-file-upload-case-study-5f97a9b52be5" },
+    { date: "2026-08-27", title: "From a “Contact Us” Form to Full Server Compromise: A Server-Side Template Injection Case Study", summary: "How a single unvalidated form field led to unauthenticated remote code execution on production infrastructure — and how to prevent it.", tags: ["Web", "SSTI", "RCE"], minutes: 7, url: "https://medium.com/@shyderali74/from-a-contact-us-form-to-full-server-compromise-a-server-side-template-injection-case-study-2318bd4731c4" },
+  ],
   formEndpoint: "", /* optional: paste a Formspree (or similar) endpoint to receive messages without opening email */
   policy: "I’m available for offensive security engagements, security consulting and senior security roles. Share a brief overview of the scope and timeline, and I’ll get back to you shortly.",
 };
