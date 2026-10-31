@@ -574,6 +574,30 @@ body{font-size:16px;line-height:1.65}
 .c-val{font-size:15px;font-weight:600}
 #about .edu li b{font-weight:600}
 .cap-title{font-size:13.5px!important}
+
+/* Attack-path background replaces the 3D waves */
+#attackbg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+@media (max-width:1100px){#attackbg{opacity:.35}}
+
+
+/* Encoded dossier badge + extraction panel */
+button.cyber-3d-hud{cursor:pointer;font:inherit;font-family:var(--mono);font-size:11px;color:#C9D3DE;transition:border-color .2s,color .2s}
+button.cyber-3d-hud:hover,button.cyber-3d-hud:focus-visible{border-color:#4FB8BE;color:#F2F6FA}
+.dossier-dialog{width:min(640px,calc(100vw - 32px));max-height:calc(100vh - 32px);background:#121B25;color:#E6EBF0;border:1px solid #2B3644;border-top:4px solid #4FB8BE;border-radius:6px;padding:24px 26px}
+.dossier-dialog::backdrop{background:rgba(3,6,10,.72);backdrop-filter:blur(4px)}
+.dd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.dd-kicker{font-family:var(--mono);font-size:12px;color:#4FB8BE}
+.dd-head h3{margin:4px 0 0;font-size:20px;font-weight:650}
+.dd-close{background:none;border:1px solid #2B3644;color:#E6EBF0;width:34px;height:34px;border-radius:4px;font-size:20px;line-height:1;cursor:pointer}
+.dd-close:hover{border-color:#4FB8BE}
+.dd-lead{margin:12px 0 14px;color:#97A3B3;font-size:15px}
+#dossier-data{width:100%;box-sizing:border-box;font-family:var(--mono);font-size:12px;line-height:1.5;color:#A0F0F5;background:#0A1017;border:1px solid #2B3644;border-radius:4px;padding:12px;resize:vertical;word-break:break-all}
+.dd-actions{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
+.dd-actions .btn{cursor:pointer;font:inherit;font-weight:600;font-size:14.5px}
+.dd-status{font-size:14px;color:#7DB57F}
+.dd-hint{margin-top:14px;font-size:14px;color:#97A3B3}
+.dd-hint summary{cursor:pointer;color:#C9D3DE}
+.dd-hint code{font-family:var(--mono);font-size:12.5px;color:#F2B544;background:rgba(242,181,68,.08);padding:1px 5px;border-radius:3px}
 </style>
 <script>/* three.js r128 (MIT), inlined so the page works offline */
 /**
@@ -589,6 +613,7 @@ body{font-size:16px;line-height:1.65}
 <div id="art" aria-hidden="true"></div>
 <canvas id="termbg" aria-hidden="true"></canvas>
 <canvas id="bg" aria-hidden="true"></canvas>
+<canvas id="attackbg" aria-hidden="true"></canvas>
 
 <header class="top">
   <div class="wrap">
@@ -849,21 +874,21 @@ const PROFILE = {
           ]
         ],
         [
-          "Security Assessment & Technical Reporting",
-          [
-            "Assessment scoping, methodology development, and execution.",
-            "Risk classification using CVSS and contextual impact analysis.",
-            "Technical documentation, evidence collection, and remediation guidance.",
-            "Remediation validation and security retesting."
-          ]
-        ],
-        [
           "Configuration Review",
           [
             "Active Directory and Group Policy configuration reviews.",
             "Windows and Linux server and endpoint configuration reviews.",
             "Network device, firewall and VPN configuration reviews.",
             "Application, database and cloud configuration reviews against security best practices."
+          ]
+        ],
+        [
+          "Security Assessment & Technical Reporting",
+          [
+            "Assessment scoping, methodology development, and execution.",
+            "Risk classification using CVSS and contextual impact analysis.",
+            "Technical documentation, evidence collection, and remediation guidance.",
+            "Remediation validation and security retesting."
           ]
         ]
       ]
@@ -1717,7 +1742,7 @@ const WORLD = {"type":"Topology","objects":{"countries":{"type":"GeometryCollect
   });
   const gridMesh = new THREE.Mesh(gridGeom, gridMat);
   gridMesh.position.set(0, -150, -80);
-  scene.add(gridMesh);
+  /* wireframe wave replaced by the code wave (see "Code wave" script) */
 
   // ------------------------------------------------------------------
   // 2. REAL CONCENTRIC WATER RIPPLE ENGINE (PURE ON-SURFACE WATER WAVE)
@@ -1991,6 +2016,11 @@ const WORLD = {"type":"Topology","objects":{"countries":{"type":"GeometryCollect
   // ------------------------------------------------------------------
   let clock = new THREE.Clock();
 
+  const _atkV = new THREE.Vector3();
+  window.__attackRipple = (x, z, red) => {
+    waterRipples.push({ x, z, age: 0, life: red ? 3.8 : 2.6, speed: red ? 340 : 300, frequency: 0.075, amplitude: red ? 38 : 20, decay: red ? 0.9 : 1.3, red: !!red });
+    if (waterRipples.length > MAX_WATER_RIPPLES) waterRipples.shift();
+  };
   function animate() {
     requestAnimationFrame(animate);
     if (document.hidden) return;
@@ -2041,7 +2071,7 @@ const WORLD = {"type":"Topology","objects":{"countries":{"type":"GeometryCollect
                 + Math.sin((vx + vz) * 0.0055 - time * 1.05) * 12
                 + Math.cos(vx * 0.016 + vz * 0.012 + time * 2.1) * 5;
 
-      let rippleGlow = 0;
+      let rippleGlow = 0, redGlow = 0;
 
       // Realistic Concentric Water Ripples from Clicks
       for (let r = 0; r < waterRipples.length; r++) {
@@ -2060,7 +2090,8 @@ const WORLD = {"type":"Topology","objects":{"countries":{"type":"GeometryCollect
           waveY += ripHeight;
 
           const crestIntensity = Math.max(0, Math.sin(distDiff * rip.frequency)) * envelope;
-          rippleGlow = Math.max(rippleGlow, crestIntensity * 2.2);
+          if (rip.red) redGlow = Math.max(redGlow, crestIntensity * 2.2);
+          else rippleGlow = Math.max(rippleGlow, crestIntensity * 2.2);
         }
       }
 
@@ -2073,6 +2104,7 @@ const WORLD = {"type":"Topology","objects":{"countries":{"type":"GeometryCollect
       let r = 0.06 + heightFactor * 0.22 + rippleGlow * 0.65;
       let g = 0.18 + heightFactor * 0.50 + rippleGlow * 0.85;
       let b = 0.22 + heightFactor * 0.55 + rippleGlow * 0.95;
+      if (redGlow > 0) { r += redGlow * 1.1; g = g * (1 - Math.min(.8, redGlow * .5)) + redGlow * 0.08; b = b * (1 - Math.min(.8, redGlow * .5)) + redGlow * 0.06; }
 
       gCol[cIdx] = Math.min(1.0, r);
       gCol[cIdx + 1] = Math.min(1.0, g);
@@ -2240,6 +2272,15 @@ const WORLD = {"type":"Topology","objects":{"countries":{"type":"GeometryCollect
     packetGeometry.attributes.color.needsUpdate = true;
 
     renderer.render(scene, camera);
+    if (window.__attackOverlay) {
+      gridMesh.updateMatrixWorld();
+      window.__attackOverlay(time, (x, z, lift = 0) => {
+        const y = Math.sin(x * 0.0075 + time * 1.35) * Math.cos(z * 0.0065 + time * 1.15) * 22
+                + Math.sin((x + z) * 0.0055 - time * 1.05) * 12 + Math.cos(x * 0.016 + z * 0.012 + time * 2.1) * 5;
+        _atkV.set(x, y + lift, z).applyMatrix4(gridMesh.matrixWorld).project(camera);
+        return [(_atkV.x + 1) / 2 * window.innerWidth, (1 - _atkV.y) / 2 * window.innerHeight, _atkV.z < 1];
+      });
+    }
   }
 
   function onResize() {
@@ -2255,9 +2296,108 @@ const WORLD = {"type":"Topology","objects":{"countries":{"type":"GeometryCollect
 </script>
 
 <!-- Interactive Cyber 3D HUD Badge -->
-<div class="cyber-3d-hud" id="cyberHud" title="Interactive 3D Cyberspace Engine (Three.js)">
+<button type="button" class="cyber-3d-hud" id="cyberHud" aria-haspopup="dialog" title="The code stream is my résumé, base64-encoded. Click to extract it.">
   <span class="cyber-3d-dot"></span>
-  <span id="cyberHudStatus">3D RECON CORE: ACTIVE [180 NODES]</span>
-</div>
+  <span id="cyberHudStatus">operator_dossier.b64 · click to extract</span>
+</button>
+
+<dialog class="dossier-dialog" id="dossier-dialog" aria-labelledby="dossier-title">
+  <div class="dd-head">
+    <div><span class="dd-kicker">Capture the flag</span><h3 id="dossier-title">Encoded operator dossier</h3></div>
+    <button type="button" class="dd-close" id="dossier-close" aria-label="Close">×</button>
+  </div>
+  <p class="dd-lead">The code flowing across this page is my résumé, encoded. Copy the payload below and decode it to read it.</p>
+  <textarea id="dossier-data" readonly rows="9" spellcheck="false" aria-label="Encoded résumé"></textarea>
+  <div class="dd-actions">
+    <button type="button" class="btn accent" id="dossier-copy">Copy payload</button>
+    <span class="dd-status" id="dossier-status" role="status" aria-live="polite"></span>
+  </div>
+  <details class="dd-hint"><summary>Need a hint?</summary>
+    <p>It’s Base64. On Linux or macOS, save it as <code>dossier.b64</code> and run <code>base64 -d dossier.b64</code>. Or paste it into CyberChef and use “From Base64”.</p>
+  </details>
+</dialog>
+
+<script>
+/* Code wave: the 3D wave surface rendered as streaming code. The code is a "classified operator dossier"
+   built from the résumé data in PROFILE, so it always stays in sync with the page. */
+(() => {
+  const cv = document.getElementById("attackbg"); if (!cv) return;
+  const ctx = cv.getContext("2d");
+  const hud = document.getElementById("cyberHudStatus");
+  const P = (typeof PROFILE !== "undefined") ? PROFILE : {};
+  const ids = (P.groups || []).flatMap(g => g.vulns.map(v => v.id));
+  const q = s => JSON.stringify(s);
+  /* The stream is my résumé, base64-encoded. Click the badge to copy it and decode it. */
+  const DOSSIER_B64 = "U1lFRCBIWURFUiBBTEkKT2ZmZW5zaXZlIFNlY3VyaXR5IFNwZWNpYWxpc3QgfCBSZWQgVGVhbWlu\nZyB8IE5ldHdvcmsgJiBBY3RpdmUgRGlyZWN0b3J5IFBlbmV0cmF0aW9uIFRlc3RpbmcgfCBBcHBs\naWNhdGlvbiAmIEFQSSBTZWN1cml0eQpIeWRlcmFiYWQsIFRlbGFuZ2FuYSwgSW5kaWEgfCBzaHlk\nZXJhbGk3NEBnbWFpbC5jb20gfCBsaW5rZWRpbi5jb20vaW4vcy1oeWRlciB8IGdpdGh1Yi5jb20v\naHlkZXJwd24KClBST0ZFU1NJT05BTCBTVU1NQVJZCk9mZmVuc2l2ZSBTZWN1cml0eSBTcGVjaWFs\naXN0IHdpdGggNSsgeWVhcnMgb2YgaGFuZHMtb24gZXhwZXJpZW5jZSBpbiByZWQgdGVhbWluZywg\nbmV0d29yayBwZW5ldHJhdGlvbiB0ZXN0aW5nIGFuZApBY3RpdmUgRGlyZWN0b3J5IHNlY3VyaXR5\nIGFzc2Vzc21lbnRzLCB3aXRoIGV4cGVydGlzZSBpbiBhZHZlcnNhcnkgZW11bGF0aW9uIGFuZCBh\ncHBsaWNhdGlvbiBhbmQgQVBJIHNlY3VyaXR5LgpEZWxpdmVyZWQgYXNzZXNzbWVudHMgZm9yIDE1\nMCsgY3VzdG9tZXJzIGFjcm9zcyBlbnRlcnByaXNlLCBnb3Zlcm5tZW50IGFuZCBpbnRlcm5hdGlv\nbmFsIGVuZ2FnZW1lbnRzIGluIHRoZQpNaWRkbGUgRWFzdCwgQWZyaWNhLCBBc2lhLVBhY2lmaWMg\nYW5kIE5vcnRoIEFtZXJpY2EuCkluZGVwZW5kZW50IHNlY3VyaXR5IHJlc2VhcmNoZXIgY3JlZGl0\nZWQgd2l0aCAxMyBwdWJsaXNoZWQgQ1ZFcyBhY3Jvc3MgUmFweWQgQWRtaW4sIEFpU09DIGFuZCBQ\naXBlc0h1YiwgcGx1cyBhCk1hbmFnZUVuZ2luZSBBRE1hbmFnZXIgUGx1cyB2dWxuZXJhYmlsaXR5\nIChaVkUtMjAyNi0yNzU4KSBmaXhlZCBieSB0aGUgdmVuZG9yLgoKQ09SRSBFWFBFUlRJU0UKLSBP\nZmZlbnNpdmUgb3BlcmF0aW9uczogcmVkIHRlYW0gb3BlcmF0aW9ucywgYWR2ZXJzYXJ5IGVtdWxh\ndGlvbiwgcmVjb25uYWlzc2FuY2UgYW5kIGF0dGFjay1zdXJmYWNlIG1hcHBpbmcsCiAgcHJpdmls\nZWdlIGVzY2FsYXRpb24sIGxhdGVyYWwgbW92ZW1lbnQKLSBJbmZyYXN0cnVjdHVyZTogaW50ZXJu\nYWwgYW5kIGV4dGVybmFsIG5ldHdvcmsgcGVuZXRyYXRpb24gdGVzdGluZywgV2luZG93cyBhbmQg\nTGludXggc2VydmVycywgZW5kcG9pbnRzLAogIGNyaXRpY2FsIHN5c3RlbXMKLSBJZGVudGl0eTog\nQWN0aXZlIERpcmVjdG9yeSBzZWN1cml0eSBhc3Nlc3NtZW50cywgYXR0YWNrLXBhdGggYW5hbHlz\naXMsIEtlcmJlcm9zIGFuZCBhdXRoZW50aWNhdGlvbiB3ZWFrbmVzc2VzCi0gQXBwbGljYXRpb25z\nOiB3ZWIgYXBwbGljYXRpb24gYW5kIEFQSSBzZWN1cml0eSwgdGhpY2sgY2xpZW50IGFuZCBBbmRy\nb2lkL21vYmlsZSB0ZXN0aW5nLCBidXNpbmVzcyBsb2dpYywKICBzb3VyY2UgY29kZSByZXZpZXcK\nLSBDb25maWd1cmF0aW9uIHJldmlldzogQWN0aXZlIERpcmVjdG9yeSBhbmQgR3JvdXAgUG9saWN5\nLCBzZXJ2ZXIgYW5kIGVuZHBvaW50LCBuZXR3b3JrIGRldmljZSwgZmlyZXdhbGwgYW5kIFZQTiwK\nICBhcHBsaWNhdGlvbiwgZGF0YWJhc2UgYW5kIGNsb3VkCi0gUmVwb3J0aW5nOiBDVlNTIHJpc2sg\ncmF0aW5nLCBwcm9vZi1vZi1jb25jZXB0IGRldmVsb3BtZW50LCB0ZWNobmljYWwgcmVwb3J0aW5n\nLCByZW1lZGlhdGlvbiB2YWxpZGF0aW9uIGFuZCByZXRlc3RpbmcKClBST0ZFU1NJT05BTCBFWFBF\nUklFTkNFClNlbmlvciBTZWN1cml0eSBBbmFseXN0IC8gUGVuZXRyYXRpb24gVGVzdGVyIC0gS3Jh\nc2ggQ29uc3VsdGluZyAtIEZlYnJ1YXJ5IDIwMjEgdG8gUHJlc2VudApEZWxpdmVyIG9mZmVuc2l2\nZSBzZWN1cml0eSBlbmdhZ2VtZW50cyBmb3IgZW50ZXJwcmlzZSwgZ292ZXJubWVudCBhbmQgaW50\nZXJuYXRpb25hbCBjdXN0b21lcnMgYWNyb3NzCmluZnJhc3RydWN0dXJlLCBuZXR3b3JrLCBpZGVu\ndGl0eSBhbmQgYXBwbGljYXRpb24gc2VjdXJpdHksIGZyb20gc2NvcGluZyBhbmQgcGxhbm5pbmcg\ndGhyb3VnaCBleHBsb2l0YXRpb24sCnJlcG9ydGluZywgcmVtZWRpYXRpb24gc3VwcG9ydCBhbmQg\ncmV0ZXN0aW5nLgotIFJlZCB0ZWFtIG9wZXJhdGlvbnMgYW5kIGFkdmVyc2FyeSBlbXVsYXRpb246\nIGF1dGhvcml6ZWQgZW5nYWdlbWVudHMgd2l0aGluIGFncmVlZCBydWxlcyBvZiBlbmdhZ2VtZW50\nLAogIGNvdmVyaW5nIHJlY29ubmFpc3NhbmNlLCBhdHRhY2stc3VyZmFjZSBtYXBwaW5nLCBleHBs\nb2l0YXRpb24sIHByaXZpbGVnZSBlc2NhbGF0aW9uIGFuZCBsYXRlcmFsIG1vdmVtZW50LgotIElu\nZnJhc3RydWN0dXJlIGFuZCBuZXR3b3JrIHNlY3VyaXR5OiBpbnRlcm5hbCBhbmQgZXh0ZXJuYWwg\nbmV0d29yayBwZW5ldHJhdGlvbiB0ZXN0cyBhbmQgdnVsbmVyYWJpbGl0eQogIGFzc2Vzc21lbnRz\nIGFjcm9zcyBzZXJ2ZXJzLCBlbmRwb2ludHMgYW5kIGNyaXRpY2FsIHN5c3RlbXM7IGV4cG9zZWQg\nc2VydmljZXMsIGluc2VjdXJlIGNvbmZpZ3VyYXRpb25zLCBhdHRhY2sgcGF0aHMuCi0gQWN0aXZl\nIERpcmVjdG9yeSBhbmQgaWRlbnRpdHkgc2VjdXJpdHk6IGF0dGFjay1wYXRoIGFuYWx5c2lzLCBh\ndXRoZW50aWNhdGlvbiBhbmQgYXV0aG9yaXphdGlvbiB3ZWFrbmVzc2VzCiAgYWNyb3NzIFdpbmRv\nd3MgYW5kIExpbnV4IGVzdGF0ZXMuCi0gQXBwbGljYXRpb24gYW5kIEFQSSBzZWN1cml0eTogYXV0\naGVudGljYXRpb24sIGF1dGhvcml6YXRpb24sIHNlc3Npb24gbWFuYWdlbWVudCwgYnVzaW5lc3Mg\nbG9naWMsIGFjY2VzcwogIGNvbnRyb2wgYW5kIGluamVjdGlvbiBmbGF3czsgcHJvb2ZzIG9mIGNv\nbmNlcHQgdG8gdmFsaWRhdGUgZmluZGluZ3MuCi0gQ29uZmlndXJhdGlvbiByZXZpZXc6IEFjdGl2\nZSBEaXJlY3RvcnkgYW5kIEdyb3VwIFBvbGljeSwgc2VydmVyIGFuZCBlbmRwb2ludCwgbmV0d29y\nayBkZXZpY2UsIGZpcmV3YWxsIGFuZCBWUE4sCiAgYXBwbGljYXRpb24sIGRhdGFiYXNlIGFuZCBj\nbG91ZCBjb25maWd1cmF0aW9ucyBhZ2FpbnN0IHNlY3VyaXR5IGJlc3QgcHJhY3RpY2UuCi0gQXNz\nZXNzbWVudCBhbmQgcmVwb3J0aW5nOiBzY29wZSBhbmQgbWV0aG9kb2xvZ3ksIENWU1MgYW5kIGJ1\nc2luZXNzLWNvbnRleHQgcmlzayByYXRpbmcsIGV2aWRlbmNlIGFuZAogIHJlbWVkaWF0aW9uIGd1\naWRhbmNlLCB2ZXJpZmljYXRpb24gdGhyb3VnaCByZXRlc3RpbmcuCgpWVUxORVJBQklMSVRZIFJF\nU0VBUkNIIEFORCBESVNDTE9TVVJFUwoxNCB2dWxuZXJhYmlsaXRpZXMgZm91bmQgdGhyb3VnaCBp\nbmRlcGVuZGVudCBzb3VyY2UgcmV2aWV3IGFuZCB0ZXN0aW5nLCByZXBvcnRlZCB0aHJvdWdoIGNv\nb3JkaW5hdGVkIGRpc2Nsb3N1cmUKYW5kIGZpeGVkIGJ5IHRoZSB2ZW5kb3JzOiAyIENyaXRpY2Fs\nLCA3IEhpZ2gsIDQgTWVkaXVtLCAxIHVuc2NvcmVkLgotIFBpcGVzSHViIChwaXBlc2h1Yi1haSk6\nIENWRS0yMDI2LTExOTcxMCwgQ1ZFLTIwMjYtMTE5NzExLCBDVkUtMjAyNi0xMTk3MTIgLSBTU1JG\nIHZpYSBpbWFnZSBVUkxzIGluIGluZGV4ZWQKICBkb2N1bWVudHM7IGNvbm5lY3RvciBkZWxldGlv\nbiB2aWEgdGhlIGNyYXdsaW5nLW1hbmFnZXIgc2NoZWR1bGUgcm91dGU7IHJhdGUtbGltaXQgYnlw\nYXNzIHZpYSBzcG9vZmVkCiAgWC1Gb3J3YXJkZWQtRm9yLiBIaWdoZXN0IENWU1MgOC41IEhpZ2gu\nIEZpeGVkIGluIDAuMTAuMC4KLSBSYXB5ZCBBZG1pbiAoWm9mZSk6IENWRS0yMDI2LTEwOTU2NSwg\nQ1ZFLTIwMjYtMTA5NTY2LCBDVkUtMjAyNi0xMDk1NjcsIENWRS0yMDI2LTExMDIzOCwgQ1ZFLTIw\nMjYtMTEwMjM5IC0KICBoYXJkLWNvZGVkIHN1cGVyLWFkbWluIGNyZWRlbnRpYWxzOyBwcml2aWxl\nZ2UgZXNjYWxhdGlvbjsgYXV0aG9yaXphdGlvbiBieXBhc3M7IHN0b3JlZCBYU1MuIEhpZ2hlc3Qg\nQ1ZTUyA5LjgKICBDcml0aWNhbC4gRml4ZWQgaW4gOS4yMC4wLiBUaGUgQ1ZFIHJlY29yZHMgY3Jl\nZGl0IGh5ZGVycHduLgotIEFpU09DIChCZWVudWFyKTogQ1ZFLTIwMjYtMTAzMDUzLCBDVkUtMjAy\nNi0xMDMwNTQsIENWRS0yMDI2LTEwMzA1NSwgQ1ZFLTIwMjYtMTAzMDU2LCBDVkUtMjAyNi0xMDMw\nNTcgLQogIE9TIGNvbW1hbmQgaW5qZWN0aW9uOyBtaXNzaW5nIGF1dGhlbnRpY2F0aW9uIGFuZCBp\nbnNlY3VyZSBkZWZhdWx0czsgaGFyZC1jb2RlZCBjcmVkZW50aWFsczsgYWNjZXNzIGNvbnRyb2wK\nICBmbGF3cy4gSGlnaGVzdCBDVlNTIDkuNCBDcml0aWNhbCAoQ1ZTUyA0LjApLiBGaXhlZCBpbiAx\nMi4wLjAuCi0gQURNYW5hZ2VyIFBsdXMgKFpvaG8gTWFuYWdlRW5naW5lKTogWlZFLTIwMjYtMjc1\nOCAtIHJlZmxlY3RlZCBYU1MgaW4gQUQgU2VhcmNoLiBGaXhlZCBpbiBCdWlsZCA4MDQzLgoKR0xP\nQkFMIENVU1RPTUVSIEVOR0FHRU1FTlRTCi0gTWlkZGxlIEVhc3Q6IFNhdWRpIEFyYWJpYSwgS3V3\nYWl0LCBVQUUsIE9tYW4sIFFhdGFyLCBCYWhyYWluCi0gQXNpYS1QYWNpZmljOiBTaW5nYXBvcmUs\nIENoaW5hLCBBdXN0cmFsaWEKLSBBZnJpY2E6IE1hdXJpdGl1cwotIE5vcnRoIEFtZXJpY2E6IFVT\nQQoKRURVQ0FUSU9OIEFORCBDRVJUSUZJQ0FUSU9OUwotIE1hc3RlciBvZiBDb21wdXRlciBBcHBs\naWNhdGlvbnMgKE1DQSksIE9zbWFuaWEgVW5pdmVyc2l0eSwgMjAyNAotIEJhY2hlbG9yIG9mIENv\nbXB1dGVyIFNjaWVuY2UsIE9zbWFuaWEgVW5pdmVyc2l0eQotIGVKUFQsIGVMZWFyblNlY3VyaXR5\nIEp1bmlvciBQZW5ldHJhdGlvbiBUZXN0ZXIKVHJhaW5pbmc6IFJlY29uIGZvciBCdWcgQm91bnR5\nLCBQZW5ldHJhdGlvbiBUZXN0ZXJzIGFuZCBFdGhpY2FsIEhhY2tlcnM7IFJldmVyc2UgRW5naW5l\nZXJpbmcgYW5kIE1hbHdhcmUgQW5hbHlzaXM7CkFuZHJvaWQgUGVuZXRyYXRpb24gVGVzdGluZzsg\nQWR2YW5jZWQgQ3liZXJzZWN1cml0eSAtIFRocmVhdHM7IExpbnV4IENvbW1hbmQgTWFzdGVyeQoK\nLS0geW91IGRlY29kZWQgaXQuIExldCdzIHRhbGs6IHNoeWRlcmFsaTc0QGdtYWlsLmNvbSAtLQo=";
+  window.__dossierB64 = DOSSIER_B64;
+  const STREAM = "-----BEGIN OPERATOR DOSSIER (base64)-----   \u2502   " + DOSSIER_B64.replace(/\n/g, "   \u2502   ") + "   \u2502   -----END OPERATOR DOSSIER-----   \u2502   ";
+  window.__attackOverlay = null;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let W = 0, H = 0, dpr = 1, raf = 0, CW = 7.2;
+  const FS = 12.5, LH = 19;
+  function size(){ dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.font = `${FS}px "IBM Plex Mono", ui-monospace, Menlo, monospace`; CW = ctx.measureText("M").width; }
+  size(); addEventListener("resize", size);
+  if (document.fonts) document.fonts.ready.then(size);
+  const isSym = ch => "{}[]():,;=\u2502".includes(ch);
+  const hash = (a, b) => { const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return s - Math.floor(s); };
+  function band(){
+    const act = document.getElementById("hero-actions"), row2 = document.querySelector(".hero-row2");
+    if (!act || !row2 || document.querySelector("main").hidden) return null;
+    const top = act.getBoundingClientRect().bottom + 22, bottom = row2.getBoundingClientRect().top - 14;
+    return bottom - top > LH * 2 ? [top, bottom] : null;
+  }
+  function draw(ms){
+    ctx.clearRect(0, 0, W, H);
+    const bd = band(); if (!bd || bd[1] < 0 || bd[0] > H) return;
+    const t = ms / 1000, rows = Math.max(2, Math.min(9, Math.floor((bd[1] - bd[0]) / LH)));
+    const y0 = bd[0] + ((bd[1] - bd[0]) - rows * LH) / 2 + LH / 2;
+    ctx.font = `${FS}px "IBM Plex Mono", ui-monospace, Menlo, monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const cols = Math.ceil(W / CW) + 2, L = STREAM.length;
+    for (let r = 0; r < rows; r++) {
+      const dir = r % 2 ? 1 : -1, speed = 9 + (r % 3) * 2;           // characters per second
+      const travel = t * speed * dir, whole = Math.floor(travel), frac = travel - whole;
+      const start = r * 97 - whole, edge = Math.min(1, (r + .5) / rows * 2, (rows - r - .5) / rows * 2);
+      let inStr = false;
+      for (let c = -1; c < cols; c++) {
+        const ch = STREAM[(((start + c) % L) + L) % L];
+        if (ch === '"') inStr = !inStr;
+        if (ch === " ") continue;
+        const x = (c + frac) * CW;
+        const ph = x * 0.0065 + t * 1.25 + r * 0.6;
+        const y = y0 + r * LH + Math.sin(ph) * 7 + Math.sin(x * 0.014 - t * 0.8) * 3;
+        const glow = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(ph));     // crests of the wave glow brighter
+        const fadeX = Math.min(1, x / 140, (W - x) / 140);           // soft fade at both screen edges
+        const a = Math.max(0, glow * fadeX * (0.55 + 0.45 * edge));
+        if (hash(c + whole * dir, r + Math.floor(t * 1.5)) < 0.025) {  // redacted: the secret bits
+          ctx.fillStyle = `rgba(255,90,79,${a})`; ctx.fillRect(x - CW * 0.42, y - FS * 0.42, CW * 0.84, FS * 0.84); continue;
+        }
+        ctx.fillStyle = isSym(ch) ? `rgba(242,181,68,${a * 0.85})` : inStr ? `rgba(170,240,245,${a})` : `rgba(79,184,190,${a * 0.85})`;
+        ctx.fillText(ch, x, y);
+      }
+    }
+  }
+  function loop(ms){ draw(ms); raf = requestAnimationFrame(loop); }
+  function start(){ cancelAnimationFrame(raf); if (reduce.matches) { draw(0); return; } raf = requestAnimationFrame(loop); }
+  addEventListener("scroll", () => { if (reduce.matches) draw(0); }, { passive: true });
+  document.addEventListener("visibilitychange", () => document.hidden ? cancelAnimationFrame(raf) : start());
+  reduce.addEventListener("change", start);
+  start();
+  /* Extraction panel: lets curious visitors copy the encoded résumé and decode it themselves */
+  const dlg = document.getElementById("dossier-dialog"), btn = document.getElementById("cyberHud");
+  const ta = document.getElementById("dossier-data"), st = document.getElementById("dossier-status");
+  if (dlg && btn && ta) {
+    ta.value = DOSSIER_B64;  /* raw base64 only, so it decodes as-is */
+    btn.addEventListener("click", () => { st.textContent = ""; dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", ""); });
+    document.getElementById("dossier-close").addEventListener("click", () => dlg.close());
+    dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+    document.getElementById("dossier-copy").addEventListener("click", async () => {
+      const payload = DOSSIER_B64.replace(/\n/g, "");
+      try { await navigator.clipboard.writeText(payload); st.textContent = "Copied. Now decode it."; }
+      catch (e) { ta.focus(); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (_) {} st.textContent = ok ? "Copied. Now decode it." : "Selected: press Ctrl+C (or \u2318C) to copy."; }
+    });
+  }
+})();
+</script>
 </body>
 </html>
