@@ -528,6 +528,8 @@ nav a.active{color:var(--ink)}
 .ab-recognition b{color:var(--ink)}
 .ab-recognition a{color:var(--accent);text-decoration:none;font-family:var(--mono);font-size:13px}
 .ab-recognition a:hover{text-decoration:underline}
+.fact dd a{color:var(--accent);text-decoration:none}
+.fact dd a:hover{text-decoration:underline}
 @media (max-width:900px){.contact-page-grid{grid-template-columns:1fr}}
 
 /* Privacy demonstration header on the live terminal */
@@ -826,7 +828,7 @@ const PROFILE = {
       ["Experience", "5+ years, 150+ customer engagements"],
       ["Security disclosures", "13 CVEs, 1 ZVE"],
       ["Professional interests", "Red Team Operations, Network Penetration Testing, Active Directory Security Assessments, and Offensive Security Research"],
-      ["Recognition", "CCB Belgium – Wall of Fame (CVD)"]
+      ["Recognition", "CCB Belgium – Wall of Fame (CVD)", "https://ccb.belgium.be/fr/cert/signalement-des-vulnerabilites-au-ccb/wall-of-fame"]
     ]
   },
   about: {
@@ -1029,7 +1031,7 @@ function render(){
      ${p.resume && p.resume !== "#" ? `<a class="btn" href="${esc(p.resume)}" target="_blank" rel="noopener">Résumé</a>` : `<a class="btn" href="#contact-us">Contact me</a>`}`;
 
   $("now-text").innerHTML = `<span class="now-role">${esc(p.now.role)}</span><span class="now-co">${esc(p.now.company)}</span><span class="now-desc">${esc(p.now.text)}</span>`;
-  $("now-facts").innerHTML = p.now.facts.map(([k, v]) => `<div class="fact"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("");
+  $("now-facts").innerHTML = p.now.facts.map(([k, v, url]) => `<div class="fact"><dt>${esc(k)}</dt><dd>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(v)}</a>` : esc(v)}</dd></div>`).join("");
 
   const ab = p.about;
   $("about-card").innerHTML = `
